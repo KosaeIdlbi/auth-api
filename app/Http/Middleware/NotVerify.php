@@ -15,23 +15,13 @@ class NotVerify
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next, $guard): Response
+    public function handle(Request $request, Closure $next): Response
     {
-        if ($guard == "admin-api") {
-            $user = Auth::guard($guard)->user();
-            if (!$user->email_verified_at) {
-                return $next($request);
-            } else {
-                return ApiResponse::SendResponse(200, "you are verified");
-            }
-        } elseif ($guard == "user-api") {
-            $user = Auth::guard($guard)->user();
-            if (!$user->email_verified_at) {
-                return $next($request);
-            } else {
-                return ApiResponse::SendResponse(200, "you are verified");
-            }
+        $user = Auth::user();
+        if (!$user->email_verified_at) {
+            return $next($request);
+        } else {
+            return ApiResponse::SendResponse(200, "you are verified");
         }
-        return $next($request);
     }
 }

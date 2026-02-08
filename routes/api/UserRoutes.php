@@ -18,18 +18,18 @@ Route::prefix("user/")->as("user.")->group(function () {
 });
 
 //auth but not verified routes
-Route::middleware(["auth:user-api", "NotVerify:user-api"])->prefix("user/verify/")->as("user.verify.")->group(function () {
+Route::middleware(["auth", "NotVerify"])->prefix("user/verify/")->as("user.verify.")->group(function () {
     Route::post("", [VerifyController::class, "verifyUser"])->name("verifyUser"); //from gmail
     Route::put("", [VerifyController::class, "update"])->name("update")->middleware("throttle:user-verification-links");
 });
 
 //auth routes
-Route::middleware(["auth:user-api"])->prefix("user/")->as("user.")->group(function () {
+Route::middleware(["auth"])->prefix("user/")->as("user.")->group(function () {
     Route::post("logout", LogoutController::class)->name("logout");
 });
 
 //auth and verified routes
-Route::middleware(["auth:user-api", "Verify:user-api"])->prefix("user/")->as("user.")->group(function () {
+Route::middleware(["auth", "Verify"])->prefix("user/")->as("user.")->group(function () {
     Route::get("home", function () {
         $user = Auth::user();
         return ApiResponse::SendResponse(200, "welcome home", $user);
