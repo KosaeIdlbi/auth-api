@@ -1,0 +1,38 @@
+ملخص ماهو sanctum وكيفية تنصيبه ونشره
+
+هو حزمة (Package) طورتها Laravel لتوفر حلاً خفيفاً ومتقدماً للمصادقة (Authentication). يوفر ميزتين رئيسيتين: 
+
+    Token API: منح API Tokens (مفاتيح دخول) للتطبيقات مثل الموبايل (React Native, Flutter) للتواصل مع السيرفر. 
+    SPA Authentication: منح حماية لتطبيقات الصفحة الواحدة (React/Vue) لتسجيل الدخول باستخدام الكوكيز (Cookies) بأمان. 
+==========================================================================================
+تنصيب ونشر ورفع لقاعدة البيانات
+composer require laravel/sanctum
+php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
+php artisan migrate
+==========================================================================================
+تعديل الguards 
+'guards' => [
+    'api' => [
+        'driver' => 'sanctum', // تأكد أنها تساوي sanctum
+        'provider' => 'users',
+    ],
+],
+
+
+بالطريقة blade يقارن بيانات تسجيل الدخول بين متحول الجلسة وبين جدول الجلسات في قاعدة البيانات
+بالطريقة api يقارن بيانات تسجيل الدخول بين التوكين المرسل بالطلب وبين التوكين الموجود في قاعدة البيانات
+=========================================================================================
+class Admin extends Authenticatable
+{
+    use HasApiTokens //نضيف الى الموديل
+=========================================================================================
+تكوين الـ API Middleware:
+
+ ->withMiddleware(function (Middleware $middleware) {
+        $middleware->alias([
+            'abilities' => CheckAbilities::class,
+            'ability' => CheckForAnyAbility::class,
+        ]);
+    })
+
+=========================================================================================

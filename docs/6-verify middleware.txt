@@ -1,0 +1,43 @@
+للتاكد ان المستخدم موثق نستخدم ال middleware : verify
+public function handle(Request $request, Closure $next, $guard): Response
+    {
+        if ($guard == "admin-api") {
+            $user = Auth::guard($guard)->user();
+            if ($user->email_verified_at) {
+                return $next($request);
+            } else {
+                return ApiResponse::SendResponse(401, "you are not verified");
+            }
+        } elseif ($guard == "user-api") {
+            $user = Auth::guard($guard)->user();
+            if ($user->email_verified_at) {
+                return $next($request);
+            } else {
+                return ApiResponse::SendResponse(401, "you are not verified");
+            }
+        }
+        return $next($request);
+    }
+
+=========================================================================================
+للتاكد ان المستخدم غير موثق نستخدم ال middleware : Notverify
+
+public function handle(Request $request, Closure $next, $guard): Response
+    {
+        if ($guard == "admin-api") {
+            $user = Auth::guard($guard)->user();
+            if (!$user->email_verified_at) {
+                return $next($request);
+            } else {
+                return ApiResponse::SendResponse(200, "you are verified");
+            }
+        } elseif ($guard == "user-api") {
+            $user = Auth::guard($guard)->user();
+            if (!$user->email_verified_at) {
+                return $next($request);
+            } else {
+                return ApiResponse::SendResponse(200, "you are verified");
+            }
+        }
+        return $next($request);
+    }

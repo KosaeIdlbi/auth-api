@@ -1,0 +1,19 @@
+Logout من كل الأجهزة (اختياري / Endpoint منفصل)
+
+استخدمه فقط إذا كان مطلوبًا أمنيًا
+
+$request->user()->tokens()->delete();
+
+
+مثال Route:
+
+POST /logout-all
+
+========================================
+التسجيل الحالي فقط : وهو المستخدم
+ public function __invoke(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return ApiResponse::SendResponse(401, "Logged out successfully");
+    }

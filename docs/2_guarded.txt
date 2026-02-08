@@ -1,0 +1,53 @@
+ال guard (الحارس) يحدد كيف نقوم بتوثيق المستخدم أي تحديد مصدر البيانات اللازمة للتوثيق eloquent(model) , database(table)
+ والنوع وهناك نوعان للتوثيق هما عن طريق sessions , tokens 
+
+يكون لكل نوع من المستخدمين guard مختلف مسؤوول عن عملية التوثيق 
+
+نقوم بتخصيص ال guards من ملف config/auth.php
+
+
+ لانشاء guard جديد :
+
+ من مصفوفة ال guards نضيف guard جديد
+
+  'guards' => [
+        'user-api' => [
+            'driver' => 'sanctum',
+            'provider' => 'users',
+        ],
+        'admin-api' => [
+            'driver' => 'sanctum',
+            'provider' => 'admins',
+        ],
+    ],
+
+بالطريقة blade يقارن بيانات تسجيل الدخول بين متحول الجلسة وبين جدول الجلسات في قاعدة البيانات في جدول sessions
+بالطريقة api يقارن بيانات تسجيل الدخول بين التوكين المرسل بالطلب وبين التوكين الموجود في قاعدة البيانات في جدول  personal_access_tokens
+
+
+
+من مصفوفة ال providers نحدد مصادر ال guards
+
+'providers' => [
+        'users' => [
+            'driver' => 'eloquent', // يجلب البيانات باستخدام الموديل
+            'model' => env('AUTH_MODEL', App\Models\User::class), //مسار الموديل
+        ],
+
+        // 'users' => [
+        //     'driver' => 'database', // يجلب البيانات باستخدام قاعدة البيانات مباشرة
+        //     'table' => 'users',
+        // ],
+    ],
+
+
+
+كيف نحدد من هو الحارس الافتراضي من اجل استخدام الواجهة Auth مباشرة دون ذكر الحارس Auth::guard("user-api")->user
+ونكتفي ب Auth::user
+
+من مصفوفة ال 
+'defaults' => [
+        'guard' => env('AUTH_GUARD', 'web'), //اسم الحارس الافتراضي
+        'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
+    ],
+

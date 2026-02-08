@@ -1,0 +1,70 @@
+$token = $user->createToken('api-register')->plainTextToken;
+
+من أين جاء createToken()
+من use HasApiTokens;
+
+ماذا تُرجع createToken()
+NewAccessToken {
+    accessToken: PersonalAccessToken,
+    plainTextToken: "5|abcdef123456..."
+}
+
+ماذا يعني plainTextToken هو التوكن الوحيد القابل للإرسال للعميل.
+{token_id}|{random_string}
+//5|fLq92K8a0NqV...Zx
+
+ماذا يتم تخزينه فعلياً في قاعدة البيانات؟
+في جدول personal_access_tokens:
+tokenable_type	App\Models\User
+tokenable_id	5
+name	api-register
+token	HASHED TOKEN
+abilities	["*"]
+created_at	now()
+
+❗ التوكن الحقيقي لا يُخزَّن بنص صريح
+
+
+ماذا يحدث عند استخدام هذا التوكن لاحقاً؟
+العميل يرسل بال headers:
+Authorization: Bearer 5|fLq92K8a0NqV...
+
+Sanctum ينفذ:
+استخراج ID = 5
+جلب record من DB
+Hash المقارنة
+يعطيبنا من هو ال tokenable اي الموديل صاحب التوكين:
+auth('user-api')->user()
+
+
+
+السلوك الافتراضي عند تسجيل دخول جديد
+عند تنفيذ:
+$token = $user->createToken('api-login')->plainTextToken;
+ماذا يحدث:
+يتم إنشاء سجل جديد في جدول personal_access_tokens.
+التوكن الجديد يصبح صالحًا فورًا.
+التوكن القديم يظل موجودًا وصالحًا أيضًا.
+أي تسجيل دخول جديد لا يحذف أو يبطل التوكن القديم تلقائيًا.
+مثال عملي
+افترض أن المستخدم قام بالتسجيل دخول:
+Token ID	User ID	Name	Created At
+1	5	api-login	10:00
+ثم سجل دخول مرة ثانية:
+Token ID	User ID	Name	Created At
+1	5	api-login	10:00
+2	5	api-login	10:05
+✅ كلاهما صالح
+✅ يمكن استخدام أي منهما في Header Authorization: Bearer ...
+
+اي يمكن القيام بعدة عمليات تسجيل دخول ولن تتاثر ببعضها البعض ونسجل خروج من اي واحدة نريد 
+دون تسجيل الخروج من الاخرى كما انه نستطيع الغاء هذه المزايا بمسح التكونز القديمة دوما مع  كل
+عملية تسجيل دخول او خروج
+==================================================================================================
+$table->string("email_verification_token", 200)->nullable();
+$table->timestamp('email_verification_token_expires_at')->nullable();
+//من اجل وضع فترة صلاحية لرابط توثيق الحساب user قمنا بتعديل جدول ال 
+//env ندخل عدد الدقائق من ملف 
+VERIFICATION_EXPIRE_TIME = 30
+
+

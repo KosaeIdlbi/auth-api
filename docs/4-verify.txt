@@ -1,0 +1,123 @@
+ال verfied هو توثيق الحساب بالايميل مثلا او رقم الهاتف
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+استراتيجية التوثيق وبعض الدوال الهامة : 
+
+في جدول المستخدم نضيف عامود اسمه email_verification_token عند انشاء مستخدم جديد نولد سلسلة عشوائية 
+باستخدام الدالة 
+use Illuminate\Support\Str;
+Str::random(8)
+ونرسل ال token الى البريد الالكتروني للمستخدم والى قاعدة البيانات لتخزينه في email_verification_token
+فاذا قام المستخدم بنسخ التوكين من الايميل وطابقه مع قاعدة البيانات بشكل صحيح يتم توثيق الحساب بالايميل
+يتمثل توثيق الحساب بالايميل بوجود قيمة غير null لعامود ال email_verified_at 
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+ملاحظات للموديل : 
+class User extends Authenticatable
+يرث من Authenticatable
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+مدة صلاحية رابط التوثيق وعدد مرات إمكانية ارسال الرابط: 
+ 
+لمدة الصلاحية :
+ نضيف العامود  "email_verification_token_expires_at"
+ونقارنه مع الوقت الحالي لاتمام عملية التوثيق عند تحديد الوقت اللازم لانتهاء الصلاحية ول يكن مثلا x نستخدم هذا الوقت في الانشاء والتعديل والتحقق ويصبح التعديل صعب لذلك نستخدم ال env
+1- من .env
+VERIFICATION_EXPIRE_TIME=30
+2-  ننشئ في config الملف config/verification.php
+<?php
+return [
+    'cooldown' => env('VERIFICATION_EXPIRE_TIME', 30),
+];
+
+في حل لم يجد القيمة الثابتة في env يفترضها 30
+
+3- الاستدعاء :
+config("verification.expire_time")
+
+
+
+
+لعدد مرات الطلب:
+ نستخدم الmiddleware الجاهزة في لارافيل والتي اسمها ThrottleRequests
+نضمنها في bootstrap/app.php
+'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
+
+طريقة الاستخدام بسيطة middleware('throttle:3,10') هنا حددت 3 محاولات خلال 10 دقائق. 
+
+يمكن استخدام طريقة أخرى اكثر تخصيصا وهي RateLimiter :
+ما هو الـ RateLimiter؟
+هو نظام مدمج في Laravel (ابتداءً من الإصدار 8) للتحكم في عدد الطلبات التي يمكن للمستخدم أو الـ IP أو أي مفتاح آخر أن ينفذها خلال فترة زمنية محددة.
+الهدف: منع الإساءة (مثل سبام إرسال روابط أو محاولات تسجيل دخول كثيرة) وحماية السيرفر.
+
+1- ننشئ php artisan make:provider RouteServiceProvider
+يتم انشائه في app/providers/RouteServiceProvider
+
+2- نستدعي الكلاسات 
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Cache\RateLimiting\Limit;
+
+3- نضبط في boot
+
+public function boot()
+    {
+// Limit::perMinute(3);   //ثلالث محاولات في الدقيقة 
+        // Limit::perHour(100);   //مئة محاولة في الساعة 
+
+        //IP حسب المستخدم أو الـ 
+        // Limit::perMinute(5)->by($request->user()->id); //كمفتاح user id إذا كان المستخدم مسجّل دخول، نستخدم الـ  
+        // Limit::perMinute(5)->by($request->ip()); //كمفتاح IP إذا لم يكن مسجّل دخول، نستخدم الـ  
+
+        //(by($request->email)) المحاولات تُحسب لكل بريد على حدة
+        //إذا أخطأ المستخدم في كتابة البريد، تُحسب على البريد الخاطئ وليس على البريد الصحيح
+
+        // by($request->ip()) 
+        // كل المحاولات من نفس الجهاز/الشبكة تُحسب معًا، سواء كانت البيانات صحيحة أو خاطئة
+
+
+        //RateLimiter اذا لم يتجاوز الحد لا يتم تنفيذ أي رد خاص من
+        // الذي استدعاه Route أو الـ Controller بل الطلب يكمل بشكل طبيعي إلى الـ 
+
+
+        // Controllerالأفضل أن يبقى التحقق من البريد في الـ ـ 
+        // RateLimiter وظيفته الأساسية هي التحكم في عدد الطلبات وليس التحقق من صحة البيانات.
+
+        //middleware("throttle:user-verification-links")
+       
+RateLimiter::for('user-verification-links', function () {
+            return Limit::perMinutes(30, 2)->by(Auth::guard("user-api")->id())
+                ->response(function () {
+                    $message = "you can use this request 2 times in 30 minutes";
+                    return ApiResponse::SendResponse("200", $message);
+                });
+        });
+        RateLimiter::for('user-password-reset-links', function ($request) {
+            return Limit::perMinutes(30, 2)->by($request->email)
+                ->response(function () use ($request) {
+                    $message = "you can use this request 2 times in 30 minutes";
+                    return ApiResponse::SendResponse("200", $message, ["email" => $request->email]);
+                });
+        });
+
+
+4-
+    Route::put("", [VerifyController::class, "update"])->name("update")->middleware("throttle:user-verification-links");
+
+
+
+
+5-
+كشف وجود البريد (Email Enumeration): عندما تقول للمستخدم "بريدك غير موجود" فأنت تكشف له أن هذا البريد غير مسجل. هذا قد يستغله مهاجم لمعرفة قائمة الإيميلات المسجلة عندك. الحل: اجعل الرسالة عامة مثل: "إذا كان البريد صحيحًا ستصلك رسالة، وإلا فلن يحدث شيء".
+
+
+
+
+
+
+
+
+
+
+
+
+
+

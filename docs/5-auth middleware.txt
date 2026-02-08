@@ -1,0 +1,49 @@
+تكوين الـ Middleware:
+
+->withMiddleware(function (Middleware $middleware) {
+    $middleware->alias([
+            'abilities' => CheckAbilities::class,
+            'ability' => CheckForAnyAbility::class,
+        ]);
+})
+
+    لإنشاء Token (للمستخدم):  
+       $token = $user->createToken('token-name')->plainTextToken;
+    return ['token' => $token];
+    لإرسال الطلب من Postman:
+    في الـ Header أضف: 
+         Key: Authorization
+         Value: Bearer  + $token
+=========================================================================================
+كيفية استخدامه (باختصار) 
+
+    لحماية المسارات:
+    استخدم الوسيط auth:sanctum. 
+    مضمن تلقائيا في laravel
+   
+     'guards' => [
+        'user-api' => [
+            'driver' => 'sanctum',
+            'provider' => 'users',
+        ],
+        'admin-api' => [
+            'driver' => 'sanctum',
+            'provider' => 'admins',
+        ],
+    ],
+
+    Route::middleware('auth:user-api')->get('/user', function (Request $request) {
+        return $request->user();//في حال المستخدم موثق يعيد اوبجكت المستخدم
+    });
+    Route::middleware('auth:admin-api')->get('/user', function (Request $request) {
+        return Auth::user();
+    });
+       //في حال المستخدم غير موثق 
+         {
+    "message": "Unauthenticated."
+     }
+==================================================================
+
+
+
+

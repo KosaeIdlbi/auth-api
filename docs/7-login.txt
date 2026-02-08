@@ -1,0 +1,14 @@
+التحقق من البريد وكلمة المرور وانشاء توكين لكل عملية تسجيل دخول :
+ $user = User::where('email', $request->email)->first();
+
+        if (! $user || ! Hash::check($request->password, $user->password)) {
+            return ApiResponse::SendResponse(401, "email or password is not correct");
+        } else {
+            $token = $user->createToken('api-register')->plainTextToken;
+            $data = [
+                "token" => $token,
+                "name" => $user->name,
+                "email" => $user->email,
+            ];
+            return ApiResponse::SendResponse(200, "user logged in successfully", $data);
+        }

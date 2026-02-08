@@ -1,0 +1,17 @@
+1 - اطلاق event : 
+event(new VerificationRequire($user, $token, "user"));
+نرسل معه اوبجكت المستخدم وتوكين التحقق من الايميل واسم المجلد الخاص بنوع المستخدم في views لارسال ايميل موجه للمستخدمين
+
+
+2- يستمع له  listener
+SendVerificationEmail
+الذي يطلق job: SendVerificationsLinks لارسال الايميل
+
+3- اسم الايميل Verification
+يرسل : ال view التالي
+ view: $this->user_model . '.emails.verification'
+
+4- يحتوي ال view على التوكين
+==========================================================
+نكرر نفس الاستراتيجية لارسال روابط اعادة تعيين كلمة المرور 
+
